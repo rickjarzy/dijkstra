@@ -1,5 +1,4 @@
-import numpy
-import os
+
 import pandas as pd
 
 node_list_txt = r"testdata/nodelist.txt"
