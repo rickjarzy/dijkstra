@@ -106,7 +106,7 @@ while (node_matrix["T"] == True).any():
             node_matrix.at[str(neighbour_node_id), "p_j"] = current_node_index
             #{% 9 %} - set neighbour nodes of current node Temp so the loop walks an to another node
             node_matrix.at[str(neighbour_node_id), "T"] = True
-
+        #{% 10 %} if neighbour node from current node vi is allready in the temp list, we will check if his label needs an update due to cheaper costs otherwise it will stay the same
         if (node_matrix.loc[str(neighbour_node_id)]["T"] == True) and (node_matrix.loc[str(neighbour_node_id)]["l"] > node_matrix.loc[str(current_node_index)]["l"] + costs):
             print("*   if clause 2 - neighbour_id %s - current_id %s" % (str(neighbour_node_id), str(current_node_index)))
             node_matrix.at[str(neighbour_node_id), "l"] = node_matrix.at[str(current_node_index), "l"] + costs
@@ -115,8 +115,8 @@ while (node_matrix["T"] == True).any():
 
 
     print(node_matrix)
-    if cou == 2:
-        break
+    #if cou == 4:
+    #    break
     cou += 1
 
 
