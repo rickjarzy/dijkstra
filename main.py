@@ -5,8 +5,7 @@ node_list_txt = r"testdata/nodelist.txt"
 arc_list_txt = r"testdata/arclist.txt"
 
 N = list()      # nachbarschaftsliste
-T = list()      # Temp Liste
-P = list()      # Permanent Liste
+
 arc_list = dict()       #adjazente arcliste - beschreibt welcher arc ZU welchem folgeknoten läuft
 node_matrix = dict()      # dictionary with vertices id as key and list of successors IDs as value
 # read out the node list, which contains the info how many arcs lead to successors from the point v_i
@@ -26,7 +25,8 @@ with open(node_list_txt) as node_file:
                                               "p_j": False,
                                               "T": False,
                                               "P": False,
-                                              "l_j": 0}     #temp label
+                                              "l_j": 0,
+                                              "pred_list":[]}     #temp label
 
     node_matrix = pd.DataFrame.from_dict(node_matrix).T
     print("\n- node_matrix:\n==============\n", node_matrix)
@@ -49,13 +49,14 @@ arc_list["neighbour"].astype(numpy.int16)
 
 print("\n- arc_list:\n==============\n", arc_list)
 
-v_s = 1         # start vertices
+v_s = 1         # start node
+
+v_e = 3         # End node
 
 # {% 1 %} - Initialisierung Dijkstra  im Pseudocode
-print("\n- Beginn Dijkstra")
-
+print("\n- Beginn Dijkstra\n======================")
 # initial start punkt settings
-print(node_matrix)
+#print(node_matrix)
 node_matrix["l_j"] = numpy.inf
 node_matrix["l"] = numpy.inf
 node_matrix.at[str(v_s), "l"] = 0
@@ -63,7 +64,7 @@ node_matrix.at[str(v_s), "l_j"] = 0
 node_matrix.at[str(v_s), "T"] = True
 
 
-print("Initial Node Matrix\n", node_matrix,"\n")
+#print("Initial Node Matrix\n", node_matrix,"\n")
 
 cou = 1
 #{% 3 %} - iter as long there are elements in the Temp node list
@@ -80,9 +81,9 @@ while (node_matrix["T"] == True).any():
     current_node_label = node_matrix.loc[str(current_node_index)]["l_j"]
     neighbour_list = node_matrix.loc[str(current_node_index)]["neighbour_arc"]
 
-    print("- current Node index : %s" % str(current_node_index))
-    print("- current node label: ", current_node_label)
-    print("- current node %s - neighour list " % str(current_node_index), neighbour_list)
+    #print("- current Node index : %s" % str(current_node_index))
+    #print("- current node label: ", current_node_label)
+    #print("- current node %s - neighour list " % str(current_node_index), neighbour_list)
 
     #{% 5 %} - set the current node permanent and eliminate it from the Temp list
     node_matrix.at[str(current_node_index), "T"] = False
@@ -94,31 +95,53 @@ while (node_matrix["T"] == True).any():
         neighbour_node_id = int(arc_list.loc[str(neighbour)]["neighbour"])
         costs = arc_list.loc[str(neighbour)]["cost"]
 
-        print("* neighbour: ", neighbour_node_id, " - costs: ", costs)
+        #print("* neighbour: ", neighbour_node_id, " - costs: ", costs)
 
         #{% 7 %} - if the neighbour node is not in the temp or permanent list
         if (node_matrix.loc[str(neighbour_node_id)]["T"] == False) and (node_matrix.loc[str(neighbour_node_id)]["P"] == False):
-            print("*   if clause 1 - neighbour_id %s - current_id %s" % (str(neighbour_node_id), str(current_node_index)))
+            #print("*   if clause 1 - neighbour_id %s - current_id %s" % (str(neighbour_node_id), str(current_node_index)))
             #{% 8 %} - if the neighbour node is neither in the Temp list nor the Permanent list label them with their aerc
             # costs and set the current node as their predecessor
             node_matrix.at[str(neighbour_node_id), "l"] = node_matrix.at[str(current_node_index), "l"]+costs
             node_matrix.at[str(neighbour_node_id), "l_j"] = node_matrix.loc[str(neighbour_node_id)]["l"]
             node_matrix.at[str(neighbour_node_id), "p_j"] = current_node_index
+
+            #update predecessor list - collects node ids from start to end point
+            #node_matrix.at[str(neighbour_node_id), "pred_list"].append(current_node_index)
             #{% 9 %} - set neighbour nodes of current node Temp so the loop walks an to another node
             node_matrix.at[str(neighbour_node_id), "T"] = True
+
         #{% 10 %} if neighbour node from current node vi is allready in the temp list, we will check if his label needs an update due to cheaper costs otherwise it will stay the same
         if (node_matrix.loc[str(neighbour_node_id)]["T"] == True) and (node_matrix.loc[str(neighbour_node_id)]["l"] > node_matrix.loc[str(current_node_index)]["l"] + costs):
-            print("*   if clause 2 - neighbour_id %s - current_id %s" % (str(neighbour_node_id), str(current_node_index)))
+            #print("*   if clause 2 - neighbour_id %s - current_id %s" % (str(neighbour_node_id), str(current_node_index)))
             node_matrix.at[str(neighbour_node_id), "l"] = node_matrix.at[str(current_node_index), "l"] + costs
             node_matrix.at[str(neighbour_node_id), "l_j"] = node_matrix.loc[str(neighbour_node_id)]["l"]
             node_matrix.at[str(neighbour_node_id), "p_j"] = current_node_index
 
+            # update predecessor list - collects node ids from start to end point
+            #node_matrix.at[str(neighbour_node_id), "pred_list"].append(current_node_index)
 
-    print(node_matrix)
+    #print(node_matrix)
     #if cou == 4:
     #    break
     cou += 1
 
+print(node_matrix)
+print("\nFind way points\n======================")
+last_node_data = node_matrix.loc[str(v_e)]
+pred_id = last_node_data["p_j"]
+way_points = [v_e]     # list that stores the nodes from the end to start point
 
 
+print("\nLast Node Data\n", last_node_data)
+print("Last Node Predecessor ID: ", pred_id)
+while pred_id:
+    print("pred_id: ", pred_id)
+    way_points.append(pred_id)
+    next_node_data = node_matrix.loc[str(pred_id)]    # get the node data from the node_matrix to select the next predecessor
+    pred_id = next_node_data["p_j"]
+
+
+
+print(way_points)
 print("Programm ENDE")
