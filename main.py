@@ -1,12 +1,13 @@
 import numpy
 import dijkstra_functions
-node_list_txt = r"testdata/nodelist.txt"
-arc_list_txt = r"testdata/arclist.txt"
+node_list_txt = r'nodelist.txt'#r"testdata/nodelist.txt"
+arc_list_txt = r'arclist.txt'#r"testdata/arclist.txt"
 
-start_node = 1
-end_node = 3
+start_node = 2395
+end_node = 78
+cost_column = 3 # selects the cost column that is read out
 
-node_matrix, arc_list = dijkstra_functions.create_data_matrix(node_list_txt, arc_list_txt)
+node_matrix, arc_list = dijkstra_functions.create_data_matrix(node_list_txt, arc_list_txt, cost_column)
 node_matrix = dijkstra_functions.dijkstra(start_node,end_node, node_matrix, arc_list)
 
 print("\nFind way points\n======================")
