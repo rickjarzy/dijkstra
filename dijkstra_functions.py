@@ -1,10 +1,43 @@
 import pandas as pd
 import numpy
+import time
 
-def dijkstra(start_node, end_node, node_matrix, arc_list):
 
+def polar_to_karth(input_phi, input_lam):
+    """
+    transforms polar koords to karthesian koordinates
+    :param input_phi: phi in [°]
+    :param input_lam: lam in [°]
+    :return: a list with the karthesian representation of the polar koordinates
+    """
+
+    pi = numpy.pi
+    R = 6356000  # middle earth radius - bezugsysteme
+
+    phi = input_phi * (pi / 180)
+    lam = input_lam * (pi / 180)
+    x = R * numpy.sin(lam) * numpy.cos(phi)
+    y = R * numpy.sin(lam) * numpy.sin(phi)
+    z = R * numpy.cos(lam)
+
+    return [x, y, z]
+
+
+def get_s12(list_p1, list_p2):
+    """
+    calcuates the distance between two 3d points
+    :param list_p1: list with x,y,z koords of P1
+    :param list_p2: list with x,y,z koords of P2
+    :return: distance between P1 and P2
+    """
+
+    s12 = numpy.sqrt((list_p1[0] - list_p2[0]) ** 2 + (list_p1[1] - list_p2[1]) ** 2 + (list_p1[2] - list_p2[2]) ** 2)
+
+    return s12
+
+def dijkstra(start_node, node_matrix, arc_list):
+    time_start = time.clock()
     v_s = start_node  # start node
-    v_e = end_node  # End node
 
     # {% 1 %} - Initialisierung Dijkstra  im Pseudocode
     print("\n- Beginn Dijkstra\n======================")
@@ -83,21 +116,31 @@ def dijkstra(start_node, end_node, node_matrix, arc_list):
         cou += 1
 
     print(node_matrix)
-
+    print("- ellapsed time: ", time.clock()-time_start, " [sec]")
     return node_matrix
 
 
-def create_data_matrix(input_node_list_txt, input_arc_list_txt, cost_column):
+def create_data_matrix(input_node_list_txt, input_arc_list_txt, input_node_koords_txt, input_home_node, cost_column=2):
+
+    """
+    Creates the node_matrix and arc_list that are needed to serve the dijkstra algorithm for its labeling tasks
+    :param input_node_list_txt: path to the node.txt file
+    :param input_arc_list_txt: path to the arc.txt file
+    :param input_node_koords_txt: path to the txt file with the polar coordinates
+    :param input_home_node:  polar coorindates of my hometowm
+    :param cost_column: integer which tells the arclist algo which cost column from the txt file should be used in the dijkstra
+    :return: node_matrix and arc_list as pandas dataframe
+    """
     N = list()  # nachbarschaftsliste
     arc_list = dict()  # adjazente arcliste - beschreibt welcher arc ZU welchem folgeknoten läuft
     node_matrix = dict()  # dictionary with vertices id as key and list of successors IDs as value
     # read out the node list, which contains the info how many arcs lead to successors from the point v_i
     with open(input_node_list_txt) as node_file:
-
+        print("- Read out file %s" % input_node_koords_txt)
         for line in node_file:
             line = line.split("\n")[0]
             N.append(int(line))
-        print(N)
+        #print(N)
         # create a node list dict that contains the point_id as key and the arc ids in a  list, that point to the successors in the
         # direct neigbourhood
         for node_list_element in range(0, len(N) - 1, 1):
@@ -106,17 +149,23 @@ def create_data_matrix(input_node_list_txt, input_arc_list_txt, cost_column):
             node_matrix[str(node_list_element + 1)] = {
                 "neighbour_arc": [arc_index for arc_index in range(N[node_list_element], N[node_list_element + 1], 1)],
                 "l": 0,  # permanent label
-                "p_j": False,
-                "T": False,
-                "P": False,
-                "l_j": 0,
-                "pred_list": []}  # temp label
+                "p_j": False,   #predecessor
+                "T": False,     # temp status
+                "P": False,     # permanent status
+                "l_j": 0,       # temp label
+                "phi": 0,       # polar kooridnate phi from txt nodepl file
+                "lam": 0,       # polar koordinate lam form txt nodepl file
+                "geom_dist": 0, # geom distance between the karthesian representations of the polar kooridnates and my home
+                }  # temp label
 
         node_matrix = pd.DataFrame.from_dict(node_matrix).T
-        print("\n- node_matrix:\n==============\n", node_matrix)
+
+
+
     # read out the adjacent_list, which contains info which arc leads to which successor and the cost info
     with open(input_arc_list_txt) as arc_file:
         cou = 1
+        print("- Read out file %s" % input_arc_list_txt)
         for line in arc_file:
             # print("cou: ", cou)
             data = line.split("\n")[0].split()
@@ -127,14 +176,31 @@ def create_data_matrix(input_node_list_txt, input_arc_list_txt, cost_column):
             cou += 1
 
     arc_list = pd.DataFrame.from_dict(arc_list).T
-
     arc_list["neighbour"].astype(numpy.int16)
 
     # now we know how many arcs and which (arc_ids) point from the v_i to its successors
     # now do i need the predecessor info in the pandas frame or is it okay to store it seperatly for the algorithm?
 
-    print("\n- arc_list:\n==============\n", arc_list)
+    #print("\n- arc_list:\n==============\n", arc_list)
 
+    with open(input_node_koords_txt) as koords_file:
+        print("- Read out file %s" % input_node_koords_txt)
+        cou = 1
+        for line in koords_file:
+            data = line.split("\n")[0].split()
+
+            phi_txt = float(data[0])
+            lam_txt = float(data[1])
+            node_matrix.at[str(cou), "phi"] = phi_txt
+            node_matrix.at[str(cou), "lam"] = lam_txt
+            node_matrix.at[str(cou), "geom_dist"] = get_s12( polar_to_karth(phi_txt, lam_txt), polar_to_karth(input_home_node[0], input_home_node[1]) )
+
+            #print("\n\nkoords: ",data)
+            #print(node_matrix.loc[str(cou)])
+            #print(node_matrix.loc[str(cou)]["phi"])
+            cou += 1
+
+    print("\n- node_matrix:\n==============\n", node_matrix)
     return node_matrix, arc_list
 
 def create_testdata_matrix(input_node_list_txt, input_arc_list_txt):
@@ -184,3 +250,22 @@ def create_testdata_matrix(input_node_list_txt, input_arc_list_txt):
     print("\n- arc_list:\n==============\n", arc_list)
 
     return node_matrix, arc_list
+
+
+def find_route(end_point, node_matrix):
+    last_node_data = node_matrix.loc[str(end_point)]
+    pred_id = last_node_data["p_j"]
+    way_points = [end_point]  # list that stores the nodes from the end to start point
+    phi_koords = [node_matrix.loc[str(end_point)]["phi"]]
+    lam_koords = [node_matrix.loc[str(end_point)]["lam"]]
+    print("- Last Node Data\n", last_node_data)
+    print("- Last Node Predecessor ID: ", pred_id)
+    while pred_id:
+        #print("pred_id: ", pred_id)
+        way_points.append(pred_id)
+        next_node_data = node_matrix.loc[str(pred_id)]  # get the node data from the node_matrix to select the next predecessor
+        phi_koords.append(next_node_data["phi"])
+        lam_koords.append(next_node_data["lam"])
+        pred_id = next_node_data["p_j"]
+
+    return way_points, phi_koords, lam_koords
