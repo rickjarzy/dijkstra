@@ -35,12 +35,12 @@ def get_s12(list_p1, list_p2):
 
     return s12
 
-def dijkstra(start_node, node_matrix, arc_list):
+def dijkstra(start_node, node_matrix, arc_list, input_desc):
     time_start = time.clock()
     v_s = start_node  # start node
 
     # {% 1 %} - Initialisierung Dijkstra  im Pseudocode
-    print("\n- Beginn Dijkstra\n======================")
+    print("\n- Beginn Dijkstra %s\n======================" % input_desc)
     # initial start punkt settings
     # print(node_matrix)
     node_matrix["l_j"] = numpy.inf
@@ -100,8 +100,7 @@ def dijkstra(start_node, node_matrix, arc_list):
 
             # {% 10 %} if neighbour node from current node vi is allready in the temp list, we will check if his label needs an update due to cheaper costs otherwise it will stay the same
             if (node_matrix.loc[str(neighbour_node_id)]["T"] == True) and (
-                    node_matrix.loc[str(neighbour_node_id)]["l"] > node_matrix.loc[str(current_node_index)][
-                "l"] + costs):
+                    node_matrix.loc[str(neighbour_node_id)]["l"] > node_matrix.loc[str(current_node_index)]["l"] + costs):
                 # print("*   if clause 2 - neighbour_id %s - current_id %s" % (str(neighbour_node_id), str(current_node_index)))
                 node_matrix.at[str(neighbour_node_id), "l"] = node_matrix.at[str(current_node_index), "l"] + costs
                 node_matrix.at[str(neighbour_node_id), "l_j"] = node_matrix.loc[str(neighbour_node_id)]["l"]
@@ -131,12 +130,14 @@ def create_data_matrix(input_node_list_txt, input_arc_list_txt, input_node_koord
     :param cost_column: integer which tells the arclist algo which cost column from the txt file should be used in the dijkstra
     :return: node_matrix and arc_list as pandas dataframe
     """
+
+    cmd_strings = ["node_id", "time", "distance", "speed limit", "clazz", "flags", "own"]
     N = list()  # nachbarschaftsliste
     arc_list = dict()  # adjazente arcliste - beschreibt welcher arc ZU welchem folgeknoten läuft
     node_matrix = dict()  # dictionary with vertices id as key and list of successors IDs as value
     # read out the node list, which contains the info how many arcs lead to successors from the point v_i
     with open(input_node_list_txt) as node_file:
-        print("- Read out file %s" % input_node_koords_txt)
+        print("- Read out file %s %s" % (input_node_list_txt, cmd_strings[cost_column-1]))
         for line in node_file:
             line = line.split("\n")[0]
             N.append(int(line))
@@ -165,13 +166,20 @@ def create_data_matrix(input_node_list_txt, input_arc_list_txt, input_node_koord
     # read out the adjacent_list, which contains info which arc leads to which successor and the cost info
     with open(input_arc_list_txt) as arc_file:
         cou = 1
-        print("- Read out file %s" % input_arc_list_txt)
+        print("- Read out file %s %s" % (input_arc_list_txt, cmd_strings[cost_column-1]))
         for line in arc_file:
             # print("cou: ", cou)
             data = line.split("\n")[0].split()
             #print("\n\n data", data)
 
-            arc_list[str(cou)] = dict({"neighbour": int(data[0]), "cost": float(data[cost_column]), "pre": None})
+            if cost_column == 7:
+                # if the line is a line with the flag 2,4,6,7 ( all bike or pedestrian flags) speed up the time in the file by dividing it
+                # with 100. so the bike and pedestrian have a better "time" (lower) wich should be favored by the dijkstra algorithm
+                print("- ",int(data[5]))
+                arc_list[str(cou)] = dict({"neighbour": int(data[0]), "cost": float(data[1]) if int(data[5]) in [2,4,6,7] else float(data[1])*100, "pre": None})
+
+            else:
+                arc_list[str(cou)] = dict({"neighbour": int(data[0]), "cost": float(data[cost_column]), "pre": None})
             # print(arc_list[str(cou)])
             cou += 1
 
@@ -184,7 +192,7 @@ def create_data_matrix(input_node_list_txt, input_arc_list_txt, input_node_koord
     #print("\n- arc_list:\n==============\n", arc_list)
 
     with open(input_node_koords_txt) as koords_file:
-        print("- Read out file %s" % input_node_koords_txt)
+        print("- Read out file %s %s" % (input_node_koords_txt, cmd_strings[cost_column-1]))
         cou = 1
         for line in koords_file:
             data = line.split("\n")[0].split()
@@ -200,10 +208,12 @@ def create_data_matrix(input_node_list_txt, input_arc_list_txt, input_node_koord
             #print(node_matrix.loc[str(cou)]["phi"])
             cou += 1
 
-    print("\n- node_matrix:\n==============\n", node_matrix)
+    #print("\n- node_matrix:\n==============\n", node_matrix)
     return node_matrix, arc_list
 
 def create_testdata_matrix(input_node_list_txt, input_arc_list_txt):
+
+    print("\n- read out test data\n==================")
     N = list()  # nachbarschaftsliste
     arc_list = dict()  # adjazente arcliste - beschreibt welcher arc ZU welchem folgeknoten läuft
     node_matrix = dict()  # dictionary with vertices id as key and list of successors IDs as value
@@ -229,7 +239,7 @@ def create_testdata_matrix(input_node_list_txt, input_arc_list_txt):
                 "pred_list": []}  # temp label
 
         node_matrix = pd.DataFrame.from_dict(node_matrix).T
-        print("\n- node_matrix:\n==============\n", node_matrix)
+        #print("\n- node_matrix:\n==============\n", node_matrix)
     # read out the adjacent_list, which contains info which arc leads to which successor and the cost info
     with open(input_arc_list_txt) as arc_file:
         cou = 1
@@ -247,7 +257,7 @@ def create_testdata_matrix(input_node_list_txt, input_arc_list_txt):
     # now we know how many arcs and which (arc_ids) point from the v_i to its successors
     # now do i need the predecessor info in the pandas frame or is it okay to store it seperatly for the algorithm?
 
-    print("\n- arc_list:\n==============\n", arc_list)
+    #print("\n- arc_list:\n==============\n", arc_list)
 
     return node_matrix, arc_list
 
@@ -258,8 +268,8 @@ def find_route(end_point, node_matrix):
     way_points = [end_point]  # list that stores the nodes from the end to start point
     phi_koords = [node_matrix.loc[str(end_point)]["phi"]]
     lam_koords = [node_matrix.loc[str(end_point)]["lam"]]
-    print("- Last Node Data\n", last_node_data)
-    print("- Last Node Predecessor ID: ", pred_id)
+    #print("- Last Node Data\n", last_node_data)
+    #print("- Last Node Predecessor ID: ", pred_id)
     while pred_id:
         #print("pred_id: ", pred_id)
         way_points.append(pred_id)

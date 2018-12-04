@@ -1,3 +1,4 @@
+# -*- coding: utf-8 -*-
 from matplotlib import pyplot as plt
 import dijkstra_functions
 
@@ -25,38 +26,71 @@ end_node_kletter = 963
 # 4 = clazz
 # 5 = flags
 
-cost_column = 2 # selects the cost column that is read out
 
-# create node matrix and arc list
-node_matrix, arc_list = dijkstra_functions.create_data_matrix(node_list_txt, arc_list_txt, node_koords_txt, home_node, cost_column)
+# create node matrix and arc list with time
+node_matrix_time, arc_list_time = dijkstra_functions.create_data_matrix(node_list_txt, arc_list_txt, node_koords_txt, home_node, 1)
+
+node_matrix_distance, arc_list_distance = dijkstra_functions.create_data_matrix(node_list_txt, arc_list_txt, node_koords_txt, home_node, 2)
+
 
 #shows node id with the nearest distance
-start_node_temp = node_matrix.loc[node_matrix["geom_dist"] == min(node_matrix["geom_dist"])]
-print("start node: \n", start_node_temp)
+start_node_temp = node_matrix_time.loc[node_matrix_time["geom_dist"] == min(node_matrix_time["geom_dist"])]
+print("start node: \n", start_node_temp)      # <----- there I got my node ID for the nearest Node
 
 # create labeled graph with dijkstra algorithm
-node_matrix = dijkstra_functions.dijkstra(start_node, node_matrix, arc_list)
-
+node_matrix_time = dijkstra_functions.dijkstra(start_node, node_matrix_time, arc_list_time, "Time")
+node_matrix_distance = dijkstra_functions.dijkstra(start_node, node_matrix_distance, arc_list_distance, "Distance")
 print("\nFind way points\n======================")
-print("Find route to Ikea: ")
-ikea_route_pred, ikea_phi, ikea_lam = dijkstra_functions.find_route(end_node_ikea, node_matrix)
+
+# TIME
+# ========
+print("Find time_route to Ikea: ")
+ikea_route_pred, ikea_phi_time, ikea_lam_time = dijkstra_functions.find_route(end_node_ikea, node_matrix_time)
 print("ikea number of nodes: ", len(ikea_route_pred))
 
-print("\nFind route to Sattler: ")
-sattler_route_pred, sattler_phi, sattler_lam = dijkstra_functions.find_route(end_node_sattler, node_matrix)
+print("\nFind time_route to Sattler: ")
+sattler_route_pred, sattler_phi_time, sattler_lam_time = dijkstra_functions.find_route(end_node_sattler, node_matrix_time)
 print("sattler number of nodes: ", len(sattler_route_pred))
 
-print("Find route to Klettergarten Weinzödl: ")
-kletter_route_pred, kletter_phi, kletter_lam = dijkstra_functions.find_route(end_node_kletter, node_matrix)
+print("Find time_route to Klettergarten Weinzödl: ")
+kletter_route_pred, kletter_phi_time, kletter_lam_time = dijkstra_functions.find_route(end_node_kletter, node_matrix_time)
 print("kletter number of nodes: ", len(kletter_route_pred))
 
+# DISTANCE
+# ===========
+
+print("Find distance_route to Ikea: ")
+ikea_route_pred_distance, ikea_phi_distance, ikea_lam_distance = dijkstra_functions.find_route(end_node_ikea, node_matrix_distance)
+print("ikea number of nodes: ", len(ikea_route_pred_distance))
+
+print("\nFind distance_route to Sattler: ")
+sattler_route_pred_distance, sattler_phi_distance, sattler_lam_distance = dijkstra_functions.find_route(end_node_sattler, node_matrix_distance)
+print("sattler number of nodes: ", len(sattler_route_pred_distance))
+
+print("Find distance_route to Klettergarten Weinzödl: ")
+kletter_route_pred_distance, kletter_phi_distance, kletter_lam_distance = dijkstra_functions.find_route(end_node_kletter, node_matrix_distance)
+print("kletter number of nodes: ", len(kletter_route_pred_distance))
+
 plt.figure()
-plt.plot( node_matrix["lam"],node_matrix["phi"], 'bx', markersize=12)
-plt.plot(home_node[1], home_node[0], color='red', marker='*', markersize=22)
-plt.plot([15.4457347], [47.1327090], color='green', marker='*', markersize=22)
-plt.plot(ikea_lam, ikea_phi, 'y-', markersize=22, linewidth=5)
-plt.plot(sattler_lam, sattler_phi, 'm-', markersize=22, linewidth=5)
-plt.plot(kletter_lam, kletter_phi, 'c-', markersize=22, linewidth=5)
+plt.plot(node_matrix_time["lam"], node_matrix_time["phi"], 'bx', markersize=3, label="Graph Nodes")
+plt.plot(home_node[1], home_node[0], color='red', marker='*', markersize=10, label="Home Node Am Hohenberg")
+plt.plot([15.4457347], [47.1327090], color='green', marker='*', markersize=10, label="Nearest Node Sundlweg")
+plt.plot(node_matrix_time.loc[str(end_node_ikea)]["lam"], node_matrix_time.loc[str(end_node_ikea)]["phi"], color='black', marker='*', markersize=10, label="Endnode IKEA")
+plt.plot(node_matrix_time.loc[str(end_node_kletter)]["lam"], node_matrix_time.loc[str(end_node_kletter)]["phi"], color="black", marker='*', markersize=10, label="Endnode Weinzödl")
+plt.plot(node_matrix_time.loc[str(end_node_sattler)]["lam"], node_matrix_time.loc[str(end_node_sattler)]["phi"], color='black', marker='*', markersize=10, label="Endnode Sattler")
+# Time
+plt.plot(ikea_lam_time, ikea_phi_time, 'y-', markersize=22, linewidth=5, label="Route IKEA - Time")
+plt.plot(sattler_lam_time, sattler_phi_time, 'm-', markersize=22, linewidth=5, label="Route Sattler - Time")
+plt.plot(kletter_lam_time, kletter_phi_time, 'c-', markersize=22, linewidth=5, label="Route Klettergarten - Time")
+# Distance
+plt.plot(ikea_lam_distance, ikea_phi_distance, 'y--', markersize=22, linewidth=5, label="Route IKEA - Distance")
+plt.plot(sattler_lam_distance, sattler_phi_distance, 'm--', markersize=22, linewidth=5, label="Route Sattler - Distance")
+plt.plot(kletter_lam_distance, kletter_phi_distance, 'c--', markersize=22, linewidth=5, label="Route Klettergarten - Distance")
+plt.legend()
+plt.title("Lab1 - Dijkstra Algorithm NavSys WS18/19")
+plt.xlabel('lam [°]')
+plt.ylabel('phi [°]')
+plt.grid(True)
 plt.show()
 
 print("Programm ENDE")
