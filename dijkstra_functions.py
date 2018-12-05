@@ -40,7 +40,7 @@ def dijkstra(start_node, node_matrix, arc_list, input_desc):
     v_s = start_node  # start node
 
     # {% 1 %} - Initialisierung Dijkstra  im Pseudocode
-    print("\n- Beginn Dijkstra %s\n======================" % input_desc)
+    print("\n- Beginn Dijkstra %s\n==========================" % input_desc)
     # initial start punkt settings
     # print(node_matrix)
     node_matrix["l_j"] = numpy.inf
@@ -175,7 +175,7 @@ def create_data_matrix(input_node_list_txt, input_arc_list_txt, input_node_koord
             if cost_column == 7:
                 # if the line is a line with the flag 2,4,6,7 ( all bike or pedestrian flags) speed up the time in the file by dividing it
                 # with 100. so the bike and pedestrian have a better "time" (lower) wich should be favored by the dijkstra algorithm
-                print("- ",int(data[5]))
+                #print("- ",int(data[5]))
                 arc_list[str(cou)] = dict({"neighbour": int(data[0]), "cost": float(data[1]) if int(data[5]) in [2,4,6,7] else float(data[1])*100, "pre": None})
 
             else:
