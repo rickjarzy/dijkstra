@@ -2,6 +2,9 @@ import pandas as pd
 import numpy
 import time
 
+# Navigations Systems lab 1 WS18/19
+# 0031430
+# Paul Arzberger
 
 def polar_to_karth(input_phi, input_lam):
     """
@@ -34,6 +37,18 @@ def get_s12(list_p1, list_p2):
     s12 = numpy.sqrt((list_p1[0] - list_p2[0]) ** 2 + (list_p1[1] - list_p2[1]) ** 2 + (list_p1[2] - list_p2[2]) ** 2)
 
     return s12
+
+def write_phi_lam_txt(input_phi, input_lam, input_route):
+    cou = 0
+    phi = input_phi
+    lam = input_lam
+    input_route
+    print("- Create outputfile " + "route_" + input_route + ".txt")
+    with open("route_" + input_route + ".txt", 'w') as outputfile:
+        for element in phi:
+            output_string = "%s %s\n" % (str(element), str(lam[cou]))
+            outputfile.write(output_string)
+            cou += 1
 
 def dijkstra(start_node, node_matrix, arc_list, input_desc):
     time_start = time.clock()
@@ -80,6 +95,7 @@ def dijkstra(start_node, node_matrix, arc_list, input_desc):
 
             neighbour_node_id = int(arc_list.loc[str(neighbour)]["neighbour"])
             costs = arc_list.loc[str(neighbour)]["cost"]
+            distance = arc_list.loc[str(neighbour)]["distance"]
 
             # print("* neighbour: ", neighbour_node_id, " - costs: ", costs)
 
@@ -92,19 +108,21 @@ def dijkstra(start_node, node_matrix, arc_list, input_desc):
                 node_matrix.at[str(neighbour_node_id), "l"] = node_matrix.at[str(current_node_index), "l"] + costs
                 node_matrix.at[str(neighbour_node_id), "l_j"] = node_matrix.loc[str(neighbour_node_id)]["l"]
                 node_matrix.at[str(neighbour_node_id), "p_j"] = current_node_index
+                node_matrix.at[str(neighbour_node_id), "data_distance"] = distance
 
-                # update predecessor list - collects node ids from start to end point
-                # node_matrix.at[str(neighbour_node_id), "pred_list"].append(current_node_index)
+
                 # {% 9 %} - set neighbour nodes of current node Temp so the loop walks an to another node
                 node_matrix.at[str(neighbour_node_id), "T"] = True
 
             # {% 10 %} if neighbour node from current node vi is allready in the temp list, we will check if his label needs an update due to cheaper costs otherwise it will stay the same
+            # that means if the new calculated costs are lower than the existing label - update the label and the predecessor id
             if (node_matrix.loc[str(neighbour_node_id)]["T"] == True) and (
                     node_matrix.loc[str(neighbour_node_id)]["l"] > node_matrix.loc[str(current_node_index)]["l"] + costs):
                 # print("*   if clause 2 - neighbour_id %s - current_id %s" % (str(neighbour_node_id), str(current_node_index)))
                 node_matrix.at[str(neighbour_node_id), "l"] = node_matrix.at[str(current_node_index), "l"] + costs
                 node_matrix.at[str(neighbour_node_id), "l_j"] = node_matrix.loc[str(neighbour_node_id)]["l"]
                 node_matrix.at[str(neighbour_node_id), "p_j"] = current_node_index
+
 
                 # update predecessor list - collects node ids from start to end point
                 # node_matrix.at[str(neighbour_node_id), "pred_list"].append(current_node_index)
@@ -157,6 +175,7 @@ def create_data_matrix(input_node_list_txt, input_arc_list_txt, input_node_koord
                 "phi": 0,       # polar kooridnate phi from txt nodepl file
                 "lam": 0,       # polar koordinate lam form txt nodepl file
                 "geom_dist": 0, # geom distance between the karthesian representations of the polar kooridnates and my home
+                "data_distance": 0,
                 }  # temp label
 
         node_matrix = pd.DataFrame.from_dict(node_matrix).T
@@ -176,10 +195,12 @@ def create_data_matrix(input_node_list_txt, input_arc_list_txt, input_node_koord
                 # if the line is a line with the flag 2,4,6,7 ( all bike or pedestrian flags) speed up the time in the file by dividing it
                 # with 100. so the bike and pedestrian have a better "time" (lower) wich should be favored by the dijkstra algorithm
                 #print("- ",int(data[5]))
-                arc_list[str(cou)] = dict({"neighbour": int(data[0]), "cost": float(data[1]) if int(data[5]) in [2,4,6,7] else float(data[1])*100, "pre": None})
+                arc_list[str(cou)] = dict({"neighbour": int(data[0]), "cost": float(data[1]) if int(data[5]) in [2,4,6,7] else float(data[1])*100, "pre": None,
+                                           "distance": float(data[2])})
 
             else:
-                arc_list[str(cou)] = dict({"neighbour": int(data[0]), "cost": float(data[cost_column]), "pre": None})
+                arc_list[str(cou)] = dict({"neighbour": int(data[0]), "cost": float(data[cost_column]), "pre": None,
+                                           "distance": float(data[2])})
             # print(arc_list[str(cou)])
             cou += 1
 
@@ -268,6 +289,7 @@ def find_route(end_point, node_matrix):
     way_points = [end_point]  # list that stores the nodes from the end to start point
     phi_koords = [node_matrix.loc[str(end_point)]["phi"]]
     lam_koords = [node_matrix.loc[str(end_point)]["lam"]]
+    distance_list =[node_matrix.loc[str(end_point)]["data_distance"]]
     #print("- Last Node Data\n", last_node_data)
     #print("- Last Node Predecessor ID: ", pred_id)
     while pred_id:
@@ -276,6 +298,7 @@ def find_route(end_point, node_matrix):
         next_node_data = node_matrix.loc[str(pred_id)]  # get the node data from the node_matrix to select the next predecessor
         phi_koords.append(next_node_data["phi"])
         lam_koords.append(next_node_data["lam"])
+        distance_list.append(next_node_data["data_distance"])
         pred_id = next_node_data["p_j"]
 
-    return way_points, phi_koords, lam_koords
+    return way_points, phi_koords, lam_koords, distance_list
