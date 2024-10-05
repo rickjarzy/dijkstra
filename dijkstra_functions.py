@@ -51,7 +51,7 @@ def write_phi_lam_txt(input_phi, input_lam, input_route):
             cou += 1
 
 def dijkstra(start_node, node_matrix, arc_list, input_desc):
-    time_start = time.clock()
+    time_start = time.time()
     v_s = start_node  # start node
 
     # {% 1 %} - Initialisierung Dijkstra  im Pseudocode
@@ -133,7 +133,7 @@ def dijkstra(start_node, node_matrix, arc_list, input_desc):
         cou += 1
 
     print(node_matrix)
-    print("- ellapsed time: ", time.clock()-time_start, " [sec]")
+    print("- ellapsed time: ", time.time()-time_start, " [sec]")
     return node_matrix
 
 
